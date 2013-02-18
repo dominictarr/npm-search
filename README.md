@@ -6,12 +6,12 @@ An index of npm using levelup.
 
 ``` 
 #download all the json in npm (~350 mb in feb 2013)
- ./dl-npm-json.sh
+./dl-npm-json.sh
 
 #initialize db
- node init.js
+node index.js
 
-node search2.js physic~ vox~
+node search.js physic~ vox~
 =>
 { 'voxel-control': [ [ 'PHYSICAL', 3 ], [ 'VOXEL', 5 ] ],
   'voxel-physical': [ [ 'PHYSICAL', 1 ], [ 'VOXEL', 1 ] ],
@@ -26,7 +26,7 @@ If you want it to go really fast, open a server,
 and then request to it.
 
 ```
-node search2.js --port 9876 &
+node search.js --port 9876 &
 
 # search terms seperated by /
 curl localhost:9876/search/terms
@@ -36,7 +36,7 @@ If you end a search term with `~` then it will return
 everthing that matches that prefix. 
 
 ```
-node search2.js stream~ err~
+node search.js stream~ err~
 ```
 
 ## todo
