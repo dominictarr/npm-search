@@ -4,64 +4,61 @@ var through = require('through')
 var http = require('http')
 var opts = require('optimist').argv
 
-require('levelup')(process.env.HOME + '/.npm-index', function (err, db) {
-  if(err) throw err
+var db = require('level-sublevel')(
+  require('levelup')(process.env.HOME + '/.level-npm')
+)
 
-  function search (query, cb) {
+var indexDb = db.sublevel('index')
 
-    var acc = null, n = 0
+function search (query, cb) {
 
-    /*var query = process.argv.slice(2)*/
+  var acc = null, n = 0
 
-    query.filter(function (e) {
-      return !!e
-    }).map(function (e) {
-        return e.toUpperCase()
-    }).forEach(function (e) {
-      n ++
+  /*var query = process.argv.slice(2)*/
 
-      var group = {}
-    //if the search term ends in ~
-      db.readStream({
-        start: e.replace('~', ''), end: e
-      })
-      .pipe(through(function (data) {
-  //      if(!group)
-          group = or(group, JSON.parse(data.value), data.key.toString())
-      }, function () {
-        if(!acc) acc = group
-        else acc = and(acc, group)
-        if(--n) return
-//        console.log(acc)
-        cb(null, acc)
-      }))
+  query.filter(function (e) {
+    return !!e
+  }).map(function (e) {
+      return e.toUpperCase()
+  }).forEach(function (e) {
+    n ++
+
+    var k = e
+
+    console.log(e)
+
+    var group = {}
+  //if the search term ends in ~
+    indexDb.createReadStream({
+      start: k.replace(/~$/, ''), end: k
     })
+    .pipe(through(function (data) {
+      var key = data.key.replace(/^.*~/, '')
+      group = or(group, JSON.parse(data.value), key.toLowerCase())
+    }, function () {
+      if(!acc) acc = group
+      else acc = and(acc, group)
+      if(--n) return
+      cb(null, acc)
+    }))
+  })
 
-    function or (acc, item, e) {
-  /*    if(item === true)
-        for(var k in item) {
-          if(!Array.isArray(acc[k]))
-            acc[k] = [[e, acc[k]]]
-        }*/
-  //    else
-        for(var k in item) {
-          if(acc[k])
-            acc[k].push([e, item[k]])
-          else
-            acc[k] = [[e, item[k]]]
-        }
-      return acc
+  function or (acc, item, e) {
+    for(var k in item) {
+      if(acc[k]) acc[k].push([e, item[k]])
+      else       acc[k] = [[e, item[k]]]
     }
-
-    function and (acc, item) {
-      var r = {}
-      for(var k in acc) {
-        if(item[k]) r[k] = acc[k].concat(item[k])
-        if(item === true) r[k] = acc[k]
-      }
-      return r
-    }
+    return acc
   }
+
+  function and (acc, item) {
+    var r = {}
+    for(var k in acc)
+      if(item[k]) r[k] = acc[k].concat(item[k])
+    
+    return r
+  }
+}
 
 if(opts.port || opts.server)
   http.createServer(function (req, res) {
@@ -71,8 +68,5 @@ if(opts.port || opts.server)
   }).listen(opts.port || 6789)
 else
   search(opts._, function (_, r) { console.log(r) })
-})
-
-
 
 
