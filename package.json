@@ -1,7 +1,7 @@
 {
   "name": "npm-search",
   "description": "",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "homepage": "https://github.com/dominictarr/npm-search",
   "repository": {
     "type": "git",
